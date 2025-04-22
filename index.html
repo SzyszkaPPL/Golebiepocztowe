@@ -1,0 +1,697 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Gołębie pocztowe - JAZSZ</title>
+  <style>
+    :root {
+      --bg-color: rgba(255, 255, 255, 0.85);
+      --text-color: #000;
+      --table-header: #f0f0f0;
+    }
+
+    body.dark {
+      --bg-color: rgba(30, 30, 30, 0.85);
+      --text-color: #eee;
+      --table-header: #444;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      text-align: center;
+      position: relative;
+      background-color: #000;
+      color: var(--text-color);
+    }
+
+    body::before {
+      content: "";
+      background-image: url('1.jpeg');
+      background-size: cover;
+      background-position: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      filter: blur(4px);
+      opacity: 0.3;
+    }
+
+    .container {
+      max-width: 1000px;
+      margin: auto;
+      background-color: var(--bg-color);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+    }
+
+    button {
+      padding: 10px 15px;
+      margin: 5px 0;
+      cursor: pointer;
+    }
+
+    .add-btn, .gray-btn {
+      width: 100%;
+      background: linear-gradient(to bottom, #e0e0e0, #c0c0c0);
+      border: 1px solid #aaa;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 8px;
+      cursor: default;
+    }
+
+    th {
+      background-color: var(--table-header);
+      cursor: pointer;
+    }
+
+    .form-inline {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    .form-wrapper {
+      margin: 20px 0;
+      border-top: 1px solid #ccc;
+      padding-top: 15px;
+    }
+
+    .status-btn {
+      border: 1px solid #ccc;
+      padding: 4px 10px;
+      cursor: pointer;
+    }
+
+    .status-obecny { background-color: #c8e6c9; }
+    .status-zaginiony { background-color: #ffcdd2; }
+    .status-martwy { background-color: #e0e0e0; }
+    .status-sprzedany { background-color: #fff9c4; }
+
+    .hidden-col { display: none; }
+
+    .theme-toggle {
+      margin: 10px;
+      float: right;
+    }
+  </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js">
+function eksportujDane() {
+  const blob = new Blob([JSON.stringify(dane, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "lista_golebi.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function importujDane(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const zawartosc = JSON.parse(e.target.result);
+      if (Array.isArray(zawartosc)) {
+        dane = zawartosc;
+        zapiszDoLocalStorage();
+        renderujTabele();
+        alert("Import zakończony sukcesem!");
+      } else {
+        alert("Plik nie zawiera prawidłowej listy gołębi.");
+      }
+    } catch (err) {
+      alert("Błąd przy wczytywaniu pliku: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function zapiszDoPDF() {
+  const element = document.querySelector(".container");
+  const opt = {
+    margin:       0.5,
+    filename:     'lista_golebi.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(element).save();
+}
+
+</script>
+</head>
+<body>
+  <div class="theme-toggle">
+    <button onclick="toggleTheme()">🌙/☀️</button>
+  </div>
+
+  <div class="container">
+    <h1>Gołębie pocztowe - JAZSZ</h1>
+    <label for="search">Wyszukaj po numerze obrączki:</label>
+    <input type="text" id="search" placeholder="Wpisz numer...">
+    <button class="add-btn" onclick="toggleForm()">➕ Dodaj gołębia</button>
+
+    <button class="gray-btn" onclick="eksportujDane()">📤 Eksportuj listę gołębi</button>
+    <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importujDane(event)">
+    <button class="gray-btn" onclick="document.getElementById('import-file').click()">📥 Importuj listę gołębi</button>
+    <button class="gray-btn" onclick="zapiszDoPDF()">🧾 Zapisz jako PDF</button>
+
+
+    <div id="form-container" class="form-wrapper" style="display:none;">
+      <div class="form-inline">
+        <input type="text" id="obraczka" placeholder="Obrączka">
+        <input type="text" id="rok" placeholder="Rok">
+        <input type="text" id="oddzial" placeholder="Oddział">
+        <input type="text" id="narodowosc" placeholder="Narodowość">
+        <select id="plec">
+          <option value="Samiec">Samiec</option>
+          <option value="Samica">Samica</option>
+        </select>
+      </div>
+      <div class="form-inline">
+        <select id="kolor">
+  <option>Niebieska</option>
+  <option>Niebieska nakrapiana</option>
+  <option>Ciemna nakrapiana</option>
+  <option>Ciemna</option>
+  <option>Czarna</option>
+  <option>Czerwona nakrapiana</option>
+  <option>Czerwona</option>
+  <option>Płowa</option>
+  <option>Biała</option>
+  <option>Szpakowata</option>
+  <option>Niebieska pstra</option>
+  <option>Niebieska nakrapiana pstra</option>
+  <option>Ciemna nakrapiana pstra</option>
+  <option>Ciemna pstra</option>
+  <option>Czarna pstra</option>
+  <option>Czerwona nakrapiana pstra</option>
+  <option>Czerwona pstra</option>
+  <option>Płowa pstra</option>
+  <option>Szpakowata pstra</option>
+  <option>Czerwona szpakowata</option>
+</select>
+        <input type="text" id="ojciec" placeholder="Ojciec (opcjonalnie)">
+        <input type="text" id="matka" placeholder="Matka (opcjonalnie)">
+        <select id="status-select">
+          <option value="Obecny">Obecny</option>
+          <option value="Zaginiony">Zaginiony</option>
+          <option value="Sprzedany">Sprzedany</option>
+          <option value="Martwy">Martwy</option>
+        </select>
+        <button onclick="dodajGolebia()">✅ Zapisz</button>
+      </div>
+    </div>
+
+    <label for="filter-year">Filtruj według rocznika:</label>
+    <select id="filter-year" onchange="filtrujRok()">
+      <option value="Wszystkie">Wszystkie</option>
+    </select>
+
+    <label for="filter-status">Filtruj według statusu:</label>
+    <select id="filter-status" onchange="filtrujStatus()">
+      <option value="Wszystkie">Wszystkie</option>
+      <option value="Obecny">Obecny</option>
+      <option value="Zaginiony">Zaginiony</option>
+      <option value="Sprzedany">Sprzedany</option>
+      <option value="Martwy">Martwy</option>
+    </select>
+
+    
+    <button class="gray-btn" onclick="window.location.href='Drukowanie list gołębi.html'">🖨️ Przejdź do wydruku</button>
+
+    <button class="gray-btn" onclick="toggleRodzice()">Ukryj rodziców</button>
+    <button class="gray-btn" onclick="clearData()">🧹 Wyczyść wszystko</button>
+
+    
+<div id="licznik-golebi" style="margin-top: 15px; font-weight: bold; font-size: 1.1em;">
+  Obecne: 0 | Zaginione: 0
+</div>
+
+<table>
+      <thead>
+        <tr>
+   	<th onclick="sortujPoKolumnie('status')">Status</th>
+  	<th onclick="sortujPoKolumnie('narodowosc')">Narodowość</th>
+  	<th onclick="sortujPoKolumnie('oddzial')">Oddział</th>
+  	<th onclick="sortujPoKolumnie('rok')">Rok</th>
+  	<th onclick="sortujPoKolumnie('obraczka')">Obrączka</th>
+  	<th onclick="sortujPoKolumnie('plec')">Płeć</th>
+  	<th onclick="sortujPoKolumnie('kolor')">Kolor</th>
+  	<th class="col-ojciec">Ojciec</th>
+  	<th class="col-matka">Matka</th>
+  	<th>Usuń</th>
+	</tr>
+
+      </thead>
+      <tbody id="pigeons-table"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const statusy = ["Obecny", "Zaginiony", "Sprzedany", "Martwy"];
+    const rocznikiSet = new Set();
+    let dane = [], rodziceUkryci = false;
+    let aktualnaKolumna = null, odwrotnyPorzadek = false;
+
+    function toggleForm() {
+      const form = document.getElementById('form-container');
+      form.style.display = form.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function getStatusClass(status) {
+      return {
+        "Obecny": "status-obecny",
+        "Zaginiony": "status-zaginiony",
+        "Sprzedany": "status-sprzedany",
+        "Martwy": "status-martwy"
+      }[status] || "";
+    }
+
+    function zmienStatus(btn, index) {
+      const current = dane[index].status;
+      const next = statusy[(statusy.indexOf(current) + 1) % statusy.length];
+      dane[index].status = next;
+      zapiszDoLocalStorage();
+      renderujTabele();
+    }
+
+    function toggleRodzice() {
+      rodziceUkryci = !rodziceUkryci;
+      document.querySelectorAll('.col-ojciec, .col-matka').forEach(el => el.classList.toggle('hidden-col'));
+      document.querySelectorAll('#pigeons-table tr').forEach(row => {
+        if (row.cells.length >= 9) {
+          row.cells[7].classList.toggle('hidden-col');
+          row.cells[8].classList.toggle('hidden-col');
+        }
+      });
+    }
+
+   function pokazRodzica(nrObraczki) {
+  const r = dane.find(d => d.obraczka === nrObraczki);
+  if (r) {
+    const kolorZPoprawka = dopasujKoncowkeKoloru(r.kolor, r.plec);
+    alert(`Obrączka: ${r.obraczka}\nKolor: ${kolorZPoprawka}\nRok: ${r.rok}\nOddział: ${r.oddzial}`);
+  } else {
+    alert(`Nie znaleziono informacji o obrączce: ${nrObraczki}`);
+  }
+}
+
+    function aktualizujRoczniki(rok) {
+      if (!rocznikiSet.has(rok)) {
+        rocznikiSet.add(rok);
+        const opcja = document.createElement('option');
+        opcja.value = rok;
+        opcja.textContent = rok;
+        document.getElementById('filter-year').appendChild(opcja);
+      }
+    }
+
+    function dodajGolebia() {
+      const obraczka = document.getElementById('obraczka').value;
+      const rok = document.getElementById('rok').value;
+      const oddzial = document.getElementById('oddzial').value;
+      const narodowosc = document.getElementById('narodowosc').value;
+      const plec = document.getElementById('plec').value;
+      const kolor = document.getElementById('kolor').value;
+      const ojciec = document.getElementById('ojciec').value || '';
+      const matka = document.getElementById('matka').value || '';
+      const status = document.getElementById('status-select').value;
+
+      if (!obraczka || !rok || !oddzial || !narodowosc) return alert("Uzupełnij wymagane pola!");
+
+      dane.push({ status, obraczka, rok, oddzial, narodowosc, kolor, plec, ojciec, matka });
+      renderujTabele();
+      zapiszDoLocalStorage();
+      ['obraczka','rok','oddzial','narodowosc','ojciec','matka'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('form-container').style.display = 'none';
+    }
+
+    function sortujPoKolumnie(kolumna) {
+      if (aktualnaKolumna === kolumna) {
+        odwrotnyPorzadek = !odwrotnyPorzadek;
+      } else {
+        aktualnaKolumna = kolumna;
+        odwrotnyPorzadek = false;
+      }
+
+      dane.sort((a, b) => {
+        let aVal = a[kolumna];
+        let bVal = b[kolumna];
+        const numeryczne = ["rok", "oddzial", "obraczka"];
+
+        if (numeryczne.includes(kolumna)) {
+          aVal = parseInt(aVal);
+          bVal = parseInt(bVal);
+        } else {
+          aVal = (aVal || "").toString().toLowerCase();
+          bVal = (bVal || "").toString().toLowerCase();
+        }
+
+        return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * (odwrotnyPorzadek ? -1 : 1);
+      });
+
+      renderujTabele();
+    }
+
+    function renderujTabele() {
+      const tabela = document.getElementById('pigeons-table');
+      tabela.innerHTML = "";
+      dane.forEach((g, index) => {
+        aktualizujRoczniki(g.rok);
+        const r = tabela.insertRow();
+        r.setAttribute("data-rok", g.rok);
+
+        const sCell = r.insertCell();
+        const sBtn = document.createElement("button");
+        sBtn.textContent = g.status;
+        sBtn.className = "status-btn " + getStatusClass(g.status);
+        sBtn.onclick = function() { zmienStatus(this, index); };
+        sCell.appendChild(sBtn);
+
+        
+[g.narodowosc, g.oddzial, g.rok, g.obraczka, g.plec].forEach(v => r.insertCell().textContent = v);
+
+// Kolor - edytowalny
+const kolorCell = r.insertCell();
+const selectKolor = document.createElement("select");
+koloryZenskie.forEach(z => {
+  const opt = document.createElement("option");
+  opt.value = z;
+  opt.textContent = g.plec === "Samiec" ? (meskieKolory[z] || z) : z;
+  if (z === g.kolor) opt.selected = true;
+  selectKolor.appendChild(opt);
+});
+selectKolor.onchange = function () {
+  g.kolor = this.value;
+  zapiszDoLocalStorage();
+  renderujTabele();
+};
+kolorCell.appendChild(selectKolor);
+
+const ojc = r.insertCell();
+if (g.ojciec) {
+  const rodzic = dane.find(d => d.obraczka === g.ojciec);
+  const status = rodzic?.status || "";
+  ojc.style.backgroundColor = {
+    "Obecny": "#c8e6c9",
+    "Zaginiony": "#ffcdd2",
+    "Martwy": "#e0e0e0",
+    "Sprzedany": "#fff9c4"
+  }[status] || "#b0b0b0";
+
+  const a = document.createElement("a");
+  a.href = "#";
+  a.textContent = g.ojciec;
+  a.onclick = () => pokazRodzica(g.ojciec);
+  ojc.appendChild(a);
+} else {
+  ojc.style.backgroundColor = "#b0b0b0"; // brak ojca
+}
+if (rodziceUkryci) ojc.classList.add('hidden-col');
+
+const mat = r.insertCell();
+if (g.matka) {
+  const rodzic = dane.find(d => d.obraczka === g.matka);
+  const status = rodzic?.status || "";
+  mat.style.backgroundColor = {
+    "Obecny": "#c8e6c9",
+    "Zaginiony": "#ffcdd2",
+    "Martwy": "#e0e0e0",
+    "Sprzedany": "#fff9c4"
+  }[status] || "#b0b0b0";
+
+  const a = document.createElement("a");
+  a.href = "#";
+  a.textContent = g.matka;
+  a.onclick = () => pokazRodzica(g.matka);
+  mat.appendChild(a);
+} else {
+  mat.style.backgroundColor = "#b0b0b0"; // brak matki
+}
+if (rodziceUkryci) mat.classList.add('hidden-col');
+
+
+        const del = r.insertCell();
+        const b = document.createElement("button");
+        b.textContent = "🗑️";
+        b.onclick = () => { dane.splice(index, 1); renderujTabele(); zapiszDoLocalStorage(); };
+        del.appendChild(b);
+      });
+
+      aktualizujLicznik();
+      filtrujStatus();
+    }
+
+    function filtrujRok() { filtrujStatus(); }
+
+    function filtrujStatus() {
+      const wybranyStatus = document.getElementById('filter-status').value;
+      const wybranyRok = document.getElementById('filter-year').value;
+
+      document.querySelectorAll('#pigeons-table tr').forEach(r => {
+        const status = r.querySelector('.status-btn')?.textContent;
+        const rok = r.getAttribute("data-rok");
+        const pokazuj = (!status || wybranyStatus === "Wszystkie" || status === wybranyStatus) &&
+                        (wybranyRok === "Wszystkie" || rok === wybranyRok);
+        r.style.display = pokazuj ? "" : "none";
+      });
+    }
+
+    function zapiszDoLocalStorage() {
+      localStorage.setItem("golabki", JSON.stringify(dane));
+    }
+
+    function clearData() {
+      if (confirm("Usunąć wszystkie dane?")) {
+        localStorage.removeItem("golabki");
+        dane = [];
+        renderujTabele();
+        document.getElementById("filter-year").innerHTML = '<option value="Wszystkie">Wszystkie</option>';
+        rocznikiSet.clear();
+      }
+    }
+
+    document.getElementById('search').addEventListener('keyup', function(e) {
+      if (e.key === "Enter") {
+        const szukany = this.value.trim().toLowerCase();
+        const wiersze = document.querySelectorAll('#pigeons-table tr');
+        let znaleziony = false;
+        wiersze.forEach(r => {
+          const obraczkaCell = r.cells[4];
+          if (obraczkaCell && obraczkaCell.textContent.toLowerCase() === szukany) {
+            r.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            r.style.backgroundColor = '#ffff99';
+            setTimeout(() => r.style.backgroundColor = '', 2000);
+            znaleziony = true;
+          }
+        });
+        if (!znaleziony) alert("Nie znaleziono gołębia o podanym numerze obrączki.");
+      }
+    });
+
+    function toggleTheme() {
+      document.body.classList.toggle('dark');
+      localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    }
+
+    
+function dopasujKoncowkeKoloru(kolor, plec) {
+  if (!kolor) return '';
+  const meskie = {
+    "Niebieska": "Niebieski",
+    "Ciemna": "Ciemny",
+    "Czarna": "Czarny",
+    "Czerwona": "Czerwony",
+    "Płowa": "Płowy",
+    "Biała": "Biały",
+    "Szpakowata": "Szpakowaty",
+    "Niebieska nakrapiana": "Niebieski nakrapiany",
+    "Czerwona nakrapiana": "Czerwony nakrapiany",
+    "Szpakowata pstra": "Szpakowaty pstry",
+    "Płowa pstra": "Płowy pstry"
+    // dodaj więcej jeśli trzeba
+  };
+  if (plec === "Samiec" && meskie[kolor]) return meskie[kolor];
+  return kolor;
+}
+
+
+
+  document.getElementById('plec').addEventListener('change', function () {
+    const plec = this.value;
+    const kolorSelect = document.getElementById('kolor');
+    const oryginalna = kolorSelect.value;
+    const meskie = {
+      "Niebieska": "Niebieski",
+      "Niebieska nakrapiana": "Niebieski nakrapiany",
+      "Ciemna nakrapiana": "Ciemny nakrapiany",
+      "Ciemna": "Ciemny",
+      "Czarna": "Czarny",
+      "Czerwona nakrapiana": "Czerwony nakrapiany",
+      "Czerwona": "Czerwony",
+      "Płowa": "Płowy",
+      "Biała": "Biały",
+      "Szpakowata": "Szpakowaty",
+      "Niebieska pstra": "Niebieski pstry",
+      "Niebieska nakrapiana pstra": "Niebieski nakrapiany pstry",
+      "Ciemna nakrapiana pstra": "Ciemny nakrapiany pstry",
+      "Ciemna pstra": "Ciemny pstry",
+      "Czarna pstra": "Czarny pstry",
+      "Czerwona nakrapiana pstra": "Czerwony nakrapiany pstry",
+      "Czerwona pstra": "Czerwony pstry",
+      "Płowa pstra": "Płowy pstry",
+      "Szpakowata pstra": "Szpakowaty pstry",
+      "Czerwona szpakowata": "Czerwony szpakowaty"
+    };
+
+    // Dopasuj wartość, jeśli to samiec
+    for (const [zenska, meska] of Object.entries(meskie)) {
+      if (oryginalna === zenska || oryginalna === meska) {
+        kolorSelect.value = (plec === 'Samiec') ? zenska : zenska;
+        break;
+      }
+    }
+  });
+
+
+  const kolorSelect = document.getElementById('kolor');
+  const plecSelect = document.getElementById('plec');
+
+  const koloryZenskie = [
+    "Niebieska", "Niebieska nakrapiana", "Ciemna nakrapiana", "Ciemna", "Czarna", "Czerwona nakrapiana",
+    "Czerwona", "Płowa", "Biała", "Szpakowata", "Niebieska pstra", "Niebieska nakrapiana pstra",
+    "Ciemna nakrapiana pstra", "Ciemna pstra", "Czarna pstra", "Czerwona nakrapiana pstra",
+    "Czerwona pstra", "Płowa pstra", "Szpakowata pstra", "Czerwona szpakowata"
+  ];
+
+  const meskieKolory = {
+    "Niebieska": "Niebieski",
+    "Niebieska nakrapiana": "Niebieski nakrapiany",
+    "Ciemna nakrapiana": "Ciemny nakrapiany",
+    "Ciemna": "Ciemny",
+    "Czarna": "Czarny",
+    "Czerwona nakrapiana": "Czerwony nakrapiany",
+    "Czerwona": "Czerwony",
+    "Płowa": "Płowy",
+    "Biała": "Biały",
+    "Szpakowata": "Szpakowaty",
+    "Niebieska pstra": "Niebieski pstry",
+    "Niebieska nakrapiana pstra": "Niebieski nakrapiany pstry",
+    "Ciemna nakrapiana pstra": "Ciemny nakrapiany pstry",
+    "Ciemna pstra": "Ciemny pstry",
+    "Czarna pstra": "Czarny pstry",
+    "Czerwona nakrapiana pstra": "Czerwony nakrapiany pstry",
+    "Czerwona pstra": "Czerwony pstry",
+    "Płowa pstra": "Płowy pstry",
+    "Szpakowata pstra": "Szpakowaty pstry",
+    "Czerwona szpakowata": "Czerwony szpakowaty"
+  };
+
+  plecSelect.addEventListener('change', function () {
+    const isSamiec = plecSelect.value === "Samiec";
+    const selectedBefore = kolorSelect.value;
+    kolorSelect.innerHTML = "";
+
+    koloryZenskie.forEach(zenskie => {
+      const opt = document.createElement('option');
+      opt.value = zenskie;
+      opt.textContent = isSamiec && meskieKolory[zenskie] ? meskieKolory[zenskie] : zenskie;
+      kolorSelect.appendChild(opt);
+    });
+
+    kolorSelect.value = koloryZenskie.includes(selectedBefore) ? selectedBefore : koloryZenskie[0];
+  });
+
+
+function aktualizujLicznik() {
+  const obecne = dane.filter(g => g.status === "Obecny").length;
+  const zaginione = dane.filter(g => g.status === "Zaginiony").length;
+  const licznikDiv = document.getElementById("licznik-golebi");
+  if (licznikDiv) {
+    licznikDiv.textContent = `Obecne: ${obecne} | Zaginione: ${zaginione}`;
+  }
+}
+
+window.onload = function() {
+      if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark');
+      }
+      const d = localStorage.getItem("golabki");
+      if (d) {
+        dane = JSON.parse(d);
+        renderujTabele();
+      }
+    }
+  
+function eksportujDane() {
+  const blob = new Blob([JSON.stringify(dane, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "lista_golebi.json";
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function importujDane(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const zawartosc = JSON.parse(e.target.result);
+      if (Array.isArray(zawartosc)) {
+        dane = zawartosc;
+        zapiszDoLocalStorage();
+        renderujTabele();
+        alert("Import zakończony sukcesem!");
+      } else {
+        alert("Plik nie zawiera prawidłowej listy gołębi.");
+      }
+    } catch (err) {
+      alert("Błąd przy wczytywaniu pliku: " + err.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function zapiszDoPDF() {
+  const element = document.querySelector(".container");
+  const opt = {
+    margin:       0.5,
+    filename:     'lista_golebi.pdf',
+    image:        { type: 'jpeg', quality: 0.98 },
+    html2canvas:  { scale: 2 },
+    jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+  };
+  html2pdf().set(opt).from(element).save();
+}
+
+</script>
+</body>
+</html>

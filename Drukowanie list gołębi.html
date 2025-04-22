@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <title>Drukuj gołębie</title>
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    table, th, td {
+      border: 1px solid #000;
+      border-collapse: collapse;
+      padding: 6px;
+      text-align: center;
+    }
+    table { margin-top: 20px; width: 100%; }
+    th { font-weight: bold; }
+
+    @media print {
+      h1, label, select, button {
+        display: none;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      @page {
+        margin: 10mm;
+      }
+    }
+
+    body { font-family: Arial; padding: 20px; }
+    table, th, td {
+      border: 1px solid #000;
+      border-collapse: collapse;
+      padding: 6px;
+      text-align: center;
+    }
+    table { margin-top: 20px; width: 100%; }
+    th { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Wydruk gołębi</h1>
+
+  <label for="rok-select">Wybierz rocznik:</label>
+  <select id="rok-select" onchange="filtrowanie()">
+    <option value="Wszystkie">Wszystkie</option>
+  </select>
+
+  <button onclick="window.print()">🖨️ Drukuj</button>
+
+  <h2 id="druk-naglowek" style="text-align:center; display:none; margin-bottom: 10px;"></h2><table id="tabela">
+    <thead>
+      <tr>
+        <th>Narodowość</th>
+        <th>Oddział</th>
+        <th>Rok</th>
+        <th>Obrączka</th>
+        <th>Płeć</th>
+        <th>Kolor</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  
+<script>
+  let wszystkieDane = [];
+
+  
+function dopasujKoncowkeKoloru(kolor, plec) {
+  const meskie = {
+    "Niebieska": "Niebieski",
+    "Niebieska nakrapiana": "Niebieski nakrapiany",
+    "Ciemna nakrapiana": "Ciemny nakrapiany",
+    "Ciemna": "Ciemny",
+    "Czarna": "Czarny",
+    "Czerwona nakrapiana": "Czerwony nakrapiany",
+    "Czerwona": "Czerwony",
+    "Płowa": "Płowy",
+    "Biała": "Biały",
+    "Szpakowata": "Szpakowaty",
+    "Niebieska pstra": "Niebieski pstry",
+    "Niebieska nakrapiana pstra": "Niebieski nakrapiany pstry",
+    "Ciemna nakrapiana pstra": "Ciemny nakrapiany pstry",
+    "Ciemna pstra": "Ciemny pstry",
+    "Czarna pstra": "Czarny pstry",
+    "Czerwona nakrapiana pstra": "Czerwony nakrapiany pstry",
+    "Czerwona pstra": "Czerwony pstry",
+    "Płowa pstra": "Płowy pstry",
+    "Szpakowata pstra": "Szpakowaty pstry",
+    "Czerwona szpakowata": "Czerwony szpakowaty"
+  };
+  return plec === "Samiec" ? (meskie[kolor] || kolor) : kolor;
+}
+
+
+  function wczytajDane() {
+    const dane = localStorage.getItem("golabki");
+    if (!dane) return;
+
+    wszystkieDane = JSON.parse(dane);
+    const roczniki = new Set(wszystkieDane.map(g => g.rok));
+    const select = document.getElementById("rok-select");
+    roczniki.forEach(r => {
+      const opcja = document.createElement("option");
+      opcja.value = r;
+      opcja.textContent = r;
+      select.appendChild(opcja);
+    });
+
+    
+document.getElementById("druk-naglowek").style.display = "block";
+document.getElementById("druk-naglowek").textContent = "Spis gołębi - wszystkie roczniki";
+
+      
+document.getElementById("druk-naglowek").style.display = "block";
+document.getElementById("druk-naglowek").textContent = "Spis gołębi - wszystkie roczniki";
+
+      
+const obecne = wszystkieDane.filter(g => g.status === "Obecny");
+
+      pokazTabele(obecne);
+  }
+
+  function filtrowanie() {
+    const wybrany = document.getElementById("rok-select").value;
+    
+const przefiltrowane = wszystkieDane.filter(g => 
+  g.status === "Obecny" && (wybrany === "Wszystkie" || g.rok === wybrany)
+);
+
+    
+document.getElementById("druk-naglowek").style.display = "block";
+let pelnyRok = (wybrany === "Wszystkie") ? "wszystkie roczniki" : ("20" + wybrany + "r.");
+document.getElementById("druk-naglowek").textContent = "Spis gołębi - " + pelnyRok;
+
+      pokazTabele(przefiltrowane);
+  }
+
+  function pokazTabele(dane) {
+    const tbody = document.querySelector("#tabela tbody");
+    tbody.innerHTML = "";
+    dane.forEach(g => {
+      const r = tbody.insertRow();
+      const plecKod = g.plec === 'Samiec' ? '1:0' : g.plec === 'Samica' ? '0:1' : '';
+      const kolorDopasowany = dopasujKoncowkeKoloru(g.kolor, g.plec);
+      [g.narodowosc, g.oddzial, g.rok, g.obraczka, plecKod, kolorDopasowany].forEach(val => {
+        const c = r.insertCell();
+        c.textContent = val || '';
+      });
+    });
+  }
+
+  wczytajDane();
+</script>
+
+</body>
+</html>
