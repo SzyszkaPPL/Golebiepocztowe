@@ -255,18 +255,29 @@ window.onload = async function () {
 </div>
 <script>
   const POPRAWNE_HASLO = "jazsz123";
+
   function sprawdzHaslo() {
     const haslo = document.getElementById("password-input").value;
     if (haslo === POPRAWNE_HASLO) {
+      const zapamietaj = confirm("Czy chcesz zapamiętać hasło do końca sesji?");
+      if (zapamietaj) {
+        sessionStorage.setItem("autoryzowany", "true");
+      }
       document.getElementById("login-overlay").style.display = "none";
     } else {
       document.getElementById("login-error").style.display = "block";
     }
   }
+
   window.addEventListener("DOMContentLoaded", () => {
-    document.getElementById("password-input").addEventListener("keyup", function(e) {
-      if (e.key === "Enter") sprawdzHaslo();
-    });
+    if (sessionStorage.getItem("autoryzowany") === "true") {
+      const overlay = document.getElementById("login-overlay");
+      if (overlay) overlay.style.display = "none";
+    } else {
+      document.getElementById("password-input").addEventListener("keyup", function(e) {
+        if (e.key === "Enter") sprawdzHaslo();
+      });
+    }
   });
 </script>
 
