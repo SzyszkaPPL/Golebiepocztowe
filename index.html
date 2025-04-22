@@ -208,6 +208,68 @@ window.onload = async function () {
 
 </head>
 <body>
+
+<style>
+  #login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(30, 30, 30, 0.95);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
+
+  #login-overlay input {
+    padding: 10px;
+    font-size: 18px;
+    margin-top: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    width: 250px;
+    text-align: center;
+  }
+
+  #login-overlay button {
+    padding: 10px 20px;
+    font-size: 16px;
+    margin-top: 10px;
+    cursor: pointer;
+  }
+
+  #login-error {
+    color: red;
+    margin-top: 10px;
+    display: none;
+  }
+</style>
+<div id="login-overlay">
+  <h2 style="color:white;">Wprowadź hasło, aby uzyskać dostęp</h2>
+  <input type="password" id="password-input" placeholder="Hasło">
+  <button onclick="sprawdzHaslo()">Zaloguj</button>
+  <div id="login-error">Błędne hasło. Spróbuj ponownie.</div>
+</div>
+<script>
+  const POPRAWNE_HASLO = "jazsz123";
+  function sprawdzHaslo() {
+    const haslo = document.getElementById("password-input").value;
+    if (haslo === POPRAWNE_HASLO) {
+      document.getElementById("login-overlay").style.display = "none";
+    } else {
+      document.getElementById("login-error").style.display = "block";
+    }
+  }
+  window.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("password-input").addEventListener("keyup", function(e) {
+      if (e.key === "Enter") sprawdzHaslo();
+    });
+  });
+</script>
+
   <div class="theme-toggle">
     <button onclick="toggleTheme()">🌙/☀️</button>
   </div>
