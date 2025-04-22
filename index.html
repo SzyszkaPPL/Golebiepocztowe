@@ -162,6 +162,50 @@ function zapiszDoPDF() {
 }
 
 </script>
+
+<script>
+const BIN_ID = '68080f2c8561e97a50054e8b';
+const API_KEY = '$2a$10$SshQ6ilB5Z/N6c8Qtt7TwenV7UpvL2SwtSmZ0KRwhFGPt.pivLMEi';
+
+async function wczytajZChmury() {
+  try {
+    const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+      headers: {
+        'X-Access-Key': API_KEY
+      }
+    });
+    const data = await res.json();
+    return data.record || [];
+  } catch (err) {
+    console.error("Błąd przy wczytywaniu danych z chmury:", err);
+    return [];
+  }
+}
+
+async function zapiszDoChmury() {
+  try {
+    await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Access-Key': API_KEY
+      },
+      body: JSON.stringify(dane)
+    });
+  } catch (err) {
+    console.error("Błąd przy zapisie do chmury:", err);
+  }
+}
+
+window.onload = async function () {
+  const daneZChmury = await wczytajZChmury();
+  if (daneZChmury && Array.isArray(daneZChmury)) {
+    dane = daneZChmury;
+    renderujTabele();
+  }
+};
+</script>
+
 </head>
 <body>
   <div class="theme-toggle">
@@ -482,7 +526,7 @@ if (rodziceUkryci) mat.classList.add('hidden-col');
     }
 
     function zapiszDoLocalStorage() {
-      localStorage.setItem("golabki", JSON.stringify(dane));
+      zapiszDoChmury();
     }
 
     function clearData() {
@@ -640,11 +684,7 @@ window.onload = function() {
       if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark');
       }
-      const d = localStorage.getItem("golabki");
-      if (d) {
-        dane = JSON.parse(d);
-        renderujTabele();
-      }
+      
     }
   
 function eksportujDane() {
