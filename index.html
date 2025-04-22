@@ -136,7 +136,7 @@ function importujDane(event) {
       const zawartosc = JSON.parse(e.target.result);
       if (Array.isArray(zawartosc)) {
         dane = zawartosc;
-        zapiszDoLocalStorage();
+        zapiszDoChmury();
         renderujTabele();
         alert("Import zakończony sukcesem!");
       } else {
@@ -339,7 +339,7 @@ window.onload = async function () {
       const current = dane[index].status;
       const next = statusy[(statusy.indexOf(current) + 1) % statusy.length];
       dane[index].status = next;
-      zapiszDoLocalStorage();
+      zapiszDoChmury();
       renderujTabele();
     }
 
@@ -389,7 +389,7 @@ window.onload = async function () {
 
       dane.push({ status, obraczka, rok, oddzial, narodowosc, kolor, plec, ojciec, matka });
       renderujTabele();
-      zapiszDoLocalStorage();
+      zapiszDoChmury();
       ['obraczka','rok','oddzial','narodowosc','ojciec','matka'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('form-container').style.display = 'none';
     }
@@ -451,7 +451,7 @@ koloryZenskie.forEach(z => {
 });
 selectKolor.onchange = function () {
   g.kolor = this.value;
-  zapiszDoLocalStorage();
+  zapiszDoChmury();
   renderujTabele();
 };
 kolorCell.appendChild(selectKolor);
@@ -502,7 +502,7 @@ if (rodziceUkryci) mat.classList.add('hidden-col');
         const del = r.insertCell();
         const b = document.createElement("button");
         b.textContent = "🗑️";
-        b.onclick = () => { dane.splice(index, 1); renderujTabele(); zapiszDoLocalStorage(); };
+        b.onclick = () => { dane.splice(index, 1); renderujTabele(); zapiszDoChmury(); };
         del.appendChild(b);
       });
 
@@ -680,12 +680,18 @@ function aktualizujLicznik() {
   }
 }
 
-window.onload = function() {
-      if (localStorage.getItem('theme') === 'dark') {
-        document.body.classList.add('dark');
-      }
-      
-    }
+
+window.onload = async function() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.body.classList.add('dark');
+  }
+  const daneZChmury = await wczytajZChmury();
+  if (Array.isArray(daneZChmury)) {
+    dane = daneZChmury;
+    renderujTabele();
+  }
+}
+
   
 function eksportujDane() {
   const blob = new Blob([JSON.stringify(dane, null, 2)], { type: "application/json" });
@@ -707,7 +713,7 @@ function importujDane(event) {
       const zawartosc = JSON.parse(e.target.result);
       if (Array.isArray(zawartosc)) {
         dane = zawartosc;
-        zapiszDoLocalStorage();
+        zapiszDoChmury();
         renderujTabele();
         alert("Import zakończony sukcesem!");
       } else {
